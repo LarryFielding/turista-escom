@@ -1,0 +1,36 @@
+.report__item {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+
+.report__info {
+  width: 250px;
+}
+
+.report__info__element {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  font-size: small;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+.incident__info {
+  width: -webkit-fill-available;
+  font-size: small;
+  font-family: Helvetica, Arial, sans-serif;
+}
+.center__text {
+  text-align: center;
+  font-family: Helvetica, Arial, sans-serif;;
+}
+
+.incident__info__element {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  padding-left: 10px;
+  padding-right: 5px;
+  font-size: small;
+  font-family: Helvetica, Arial, sans-serif;;
+}

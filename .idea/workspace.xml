@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="2b592d2d-df8d-4e3c-b45d-59ec9c2b50a9" name="Default Changelist" comment="" />
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ProjectId" id="1U7kjB4umPxSchhn6kVjxX57JHq" />
+  <component name="PropertiesComponent">
+    <property name="HbShouldOpenHtmlAsHb" value="enabled" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="js.meteor.library.cached" value="$PROJECT_DIR$/.meteor" />
+    <property name="js.meteor.library.was.enabled" value="true" />
+    <property name="js.meteor.project" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/imports/api" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="settings.editor.selected.configurable" value="Errors" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/imports/api" />
+      <recent name="$PROJECT_DIR$/imports/ui" />
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/startup" />
+      <recent name="$PROJECT_DIR$/imports/components" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/imports" />
+    </key>
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="2b592d2d-df8d-4e3c-b45d-59ec9c2b50a9" name="Default Changelist" comment="" />
+      <created>1574715153961</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1574715153961</updated>
+      <workItem from="1574715156057" duration="2053000" />
+      <workItem from="1574717304602" duration="4211000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+</project>

@@ -1,0 +1,67 @@
+body {
+  padding: 10px;
+  font-family: sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.row {
+  display: flex;
+  float: contour;
+}
+
+/* Create two equal columns that sits next to each other */
+.column {
+  flex: 50%;
+  padding: 10px;
+  height: 300px; /* Should be removed. Only for demonstration */
+}
+
+.column__header {
+  flex: 50%;
+  padding: 10px;
+}
+
+.item {
+  background: white;
+  border: 1px solid #e8e8e8;
+  margin-bottom: 1.3rem;
+  padding: 1.3rem;
+}
+
+.in__line__text {
+  display: inline;
+}
+
+.tag__bold {
+  font-weight: bold;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.custom__chekbox {
+  display: inline;
+}
+
+.center__content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.to__right__left {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@import "./components/message";
+@import "./components/chat-historial";
+@import "./components/panic-button";
+@import "./components/report-list-item";
+@import "./components/medical-record";
+@import "./components/title-bar";
+@import "./components/board";
+
+

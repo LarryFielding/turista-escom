@@ -1,0 +1,57 @@
+.message {
+  padding: 5px;
+}
+
+.container__mine {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.container__yours {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.message__mine {
+  //border-radius: 15px 50px;
+  //background: #999aff;
+  //border: 1px solid #000000;
+  //padding: 1rem;
+  flex-direction: column;
+}
+
+.message__yours {
+  //border-radius: 50px 15px;
+  //background: #e1a8ff;
+  //border: 1px solid #000000;
+  //padding: 1rem;
+  flex-direction: column;
+}
+
+.body__op {
+  background-color: darkblue;
+  border-radius: 24px;
+  color: aliceblue;
+  padding: 5%;
+  margin: 0;
+  text-align: center;
+  font-size: small;
+}
+
+.body__cit {
+  background-color: crimson;
+  border-radius: 24px;
+  color: aliceblue;
+  padding: 5%;
+  margin: 0;
+  text-align: center;
+  font-size: small;
+}
+
+.time__chat {
+  color: black;
+  padding: 5%;
+  margin: 0;
+  font-size: small;
+}
+
