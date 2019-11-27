@@ -13,38 +13,80 @@ export default class Tablero extends React.Component {
         this.state = {
             flag: false,
             jugadores: [],
-            idJugador: 0
+            casillas: [],
+            idJugador: 0,
+            colores: [],
+            activa: false
         };
 
         this.moverJugador = this.moverJugador.bind(this);
+        this.desactive = this.desactive.bind(this);
         this.getPlayerPosition = this.getPlayerPosition.bind(this);
     }
 
     componentDidMount() {
         client.onopen = () => {
             console.log('WebSocket Client Connected');
+            for (let i = 1; i <= 40; i++) {
+                Meteor.call('getBoard', i,(err, res) => {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        this.setState({casillas: [...this.state.casillas, res]}, () => {
+                            if (i === 40) {
+                                console.log(this.state);
+                            }
+                        });
+                    }
+                });
+            }
+            let usuario = prompt('¿Número de jugador (1/2): ');
+            this.setState({
+                idJugador: parseInt(usuario)
+            }, () => {
+                Meteor.call('getPlayer', 0,(err, res) => {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        this.setState({jugadores: [...this.state.jugadores, res]});
+                        console.log(this.state);
+                    }
+                });
+                Meteor.call('getPlayer', 1,(err, res) => {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        this.setState({jugadores: [...this.state.jugadores, res]});
+                        console.log(this.state);
+                    }
+                });
+            });
         };
         client.onmessage = (message) => {
-            //console.log(message);
-            this.setState({flag: !this.state.flag});
-            //console.log('state:', this.state);
+            const info = JSON.parse(message.data);
+            if (info.tipo === 'jugador') {
+                const jugador = info.data;
+                const tempArr = this.state.jugadores.filter(j => j.id !== jugador.id);
+                this.setState({
+                    jugadores: [...tempArr, jugador]
+                }, () => console.log('se actualizaron jugadores: ', this.state));
+            } else if (info.tipo === 'casilla') {
+                const casilla = info.data;
+                const tempArr = this.state.casillas.filter(c => c.Posicion !== casilla.Posicion);
+                let c = [...tempArr, casilla];
+                c.sort((a,b) => a.Posicion < b.Posicion ? -1 : 1);
+                this.setState({
+                    casillas: c
+                }, () => console.log('se actualizaron casillas: ', this.state));
+            }
         };
         // Estados de prueba:
         this.setState({
-            jugadores: [
-                {id: 1, dinero: 1500, posicion: 1, carcel: false, nprop: 0, color: 0},
-                {id: 2, dinero: 1500, posicion: 1, carcel: false, nprop: 0, color: 1}
-            ],
-            casillas: [
-                {id: 1, propietario: 1},
-                {id: 1, propietario: 0}
-            ],
-            colores: ['yellow', 'red', 'green', 'orange'],
-            idJugador: 1
+            colores: ['yellow', 'red', 'green', 'orange']
         });
     }
 
-    getPlayerPosition(casilla) {
+    getPlayerColor(casilla) {
         const index = this.state.jugadores.findIndex(j => j.posicion === casilla);
         if (index === -1) {
             return undefined;
@@ -53,405 +95,476 @@ export default class Tablero extends React.Component {
         }
     }
 
-    moverJugador(idJugador, dados) {
-        this.setState(prevState => ({
-            jugadores : prevState.jugadores.map(
-                j => j.id === idJugador ? {...j, posicion: (j.posicion+dados)%40} : j)
-        }));
+    getPlayerPosition(casilla) {
+        const index = this.state.jugadores.findIndex(j => j.posicion === casilla);
+        if (index === -1) {
+            return undefined;
+        } else {
+            return this.state.jugadores[index].posicion;
+        }
     }
 
+    moverJugador(idJugador, dados) {
+        /*
+        this.setState(prevState => ({
+            jugadores : prevState.jugadores.map(
+                j => j.id === idJugador ? {...j, posicion: (j.posicion+dados)%40} : j),
+            activa: true
+        }), () => {
+            console.log(this.state);
+            console.log(this.state.jugadores[this.state.idJugador-1].posicion);
+        });*/
+        Meteor.call('tirar', idJugador, dados, (err, res) => {
+            if (res) {
+                this.setState({activa: true});
+            }
+        });
+    }
+
+    desactive() {
+        this.setState({activa: false});
+    }
 
     render() {
         return (
             <div>
-                <div className="table">
-                    <div className="board">
-                        <div className="center">
-                            <div className="community-chest-deck">
-                                <div className="ipn-logo"/>
-                                <div align="center">
-                                    <button>Ver datos</button>
+                {this.state.casillas.length !== 40 ? undefined
+                    : <div className="table">
+                        <div className="board">
+                            <div className="center">
+                                <div className="community-chest-deck">
+                                    <div className="ipn-logo"/>
+                                    <div align="center">
+                                        <button>Ver datos</button>
+                                    </div>
+                                </div>
+                                <h1 className="title">TURISTA ESCOM</h1>
+                                <div className="chance-deck">
+                                    <div className="escom-logo"/>
+                                    <div align="center">
+                                        <Dados idJugador={this.state.idJugador} handler={this.moverJugador}/>
+                                    </div>
                                 </div>
                             </div>
-                            <h1 className="title">TURISTA ESCOM</h1>
-                            <div className="chance-deck">
-                                <div className="escom-logo"/>
-                                <div align="center">
-                                    <Dados idJugador={this.state.idJugador} handler={this.moverJugador}/>
-                                </div>
-                            </div>
-                        </div>
 
-                        {/*ESQUINA INFERIOR DERECHA*/}
-                        <div className="space corner go">
-                            <img src="/casillas/11.png" alt="Recursar"/>
-                        </div>
+                            {/*ESQUINA INFERIOR DERECHA*/}
+                            <div className="space corner go">
+                                <img src="/casillas/11.png" alt="Recursar"/>
+                            </div>
 
-                        {/* CASILLAS ABAJO */}
-                        <div className="row horizontal-row bottom-row">
-                            <Casilla imagen="/casillas/2.png"
-                                     nombre="Mate-Discretas"
-                                     color="light-blue"
-                                     colorUsuario={this.getPlayerPosition(2)}
-                                     rotacion="rotacion-90"
-                                     precio={3000} numeroCasilla={2}/>
+                            {/* CASILLAS ABAJO */}
+                            <div className="row horizontal-row bottom-row">
+                                <Casilla imagen="/casillas/2.png"
+                                         nombre="Mate-Discretas"
+                                         color="light-blue"
+                                         colorUsuario={this.state.casillas[2-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[2-1].Propietario-1]
+                                             : this.getPlayerColor(2)}
+                                         activa={this.state.activa && 2 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[2-1]}
+                                         idJugador={this.state.idJugador}
+                                         rotacion="rotacion-90"
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[2-1].Precio} numeroCasilla={2}/>
 
-                            <div className="space property">
-                                <div className="container">
-                                    {this.getPlayerPosition(3) === undefined
-                                        ? <div className="color-bar light-blue"/>
-                                        : <div className={`color-bar ${this.getPlayerPosition(3)}`}/>}
-                                    <div className="image-container">
-                                        <img src="/casillas/3.png" alt="Vectorial"/>
-                                    </div>
-                                    <div className="price">Precio $100</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    {this.getPlayerPosition(4) === undefined
-                                        ? <div className="color-bar light-blue"/>
-                                        : <div className={`color-bar ${this.getPlayerPosition(4)}`}/>}
-                                    <div className="image-container">
-                                        <img src="/casillas/4.png" alt="Calculo"/>
-                                    </div>
-                                    <div className="price">Precio $100</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    {this.getPlayerPosition(5) === undefined
-                                        ? <div className="color-bar light-blue"/>
-                                        : <div className={`color-bar ${this.getPlayerPosition(5)}`}/>}
-                                    <div className="image-container">
-                                        <img src="/casillas/5.png" alt="Algoritmia"/>
-                                    </div>
-                                    <div className="price">Precio $100</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    {this.getPlayerPosition(6) === undefined
-                                        ? <div className="color-bar light-blue"/>
-                                        : <div className={`color-bar ${this.getPlayerPosition(6)}`}/>}
-                                    <div className="image-container">
-                                        <img src="/casillas/6.png" alt="Fisica"/>
-                                    </div>
-                                    <div className="price">Precio $100</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    {this.getPlayerPosition(7) === undefined
-                                        ? <div className="color-bar light-blue"/>
-                                        : <div className={`color-bar ${this.getPlayerPosition(7)}`}/>}
-                                    <div className="image-container rotacion-90">
-                                        <img src="/casillas/7.png" alt="IES"/>
-                                    </div>
-                                    <div className="price">Precio $100</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    {this.getPlayerPosition(8) === undefined
-                                        ? <div className="color-bar light-blue"/>
-                                        : <div className={`color-bar ${this.getPlayerPosition(8)}`}/>}
-                                    <div className="image-container rotacion-90">
-                                        <img src="/casillas/8.png" alt="Ecuaciones"/>
-                                    </div>
-                                    <div className="price">Precio $100</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    {this.getPlayerPosition(9) === undefined
-                                        ? <div className="color-bar light-blue"/>
-                                        : <div className={`color-bar ${this.getPlayerPosition(9)}`}/>}
-                                    <div className="image-container">
-                                        <img src="/casillas/9.png" alt="Algebra-Lineal"/>
-                                    </div>
-                                    <div className="price">Precio $100</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    {this.getPlayerPosition(10) === undefined
-                                        ? <div className="color-bar light-blue"/>
-                                        : <div className={`color-bar ${this.getPlayerPosition(10)}`}/>}
-                                    <div className="image-container">
-                                        <img src="/casillas/10.png" alt="Calculo-Aplicado"/>
-                                    </div>
-                                    <div className="price">Precio $100</div>
-                                </div>
-                            </div>
-                        </div>
-                        {/* INICIO*/}
-                        <div>
-                            <img src="casillas/1.png" alt="Salida"/>
-                        </div>
+                                <Casilla imagen="/casillas/3.png"
+                                         nombre="Mate-Discretas"
+                                         color="light-blue"
+                                         //colorUsuario={this.getPlayerColor(3)}
+                                         colorUsuario={this.state.casillas[3-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[3-1].Propietario-1]
+                                             : this.getPlayerColor(3)}
+                                         activa={this.state.activa && 3 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[3-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[3-1].Precio} numeroCasilla={3}/>
 
-                        {/*CASILLAS IZQUIERDA*/}
-                        <div className="row vertical-row left-row">
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/32.png" alt="Analisis-Algoritmos"/>
-                                    </div>
-                                    <div className="price">Precio $400</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/33.png" alt="Ingenieria-Software"/>
-                                    </div>
-                                    <div className="price">Precio $400</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/34.png" alt="Administracion-Proyectos"/>
-                                    </div>
-                                    <div className="price">Precio $400</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/35.png" alt="Teoria-Comunicaciones"/>
-                                    </div>
-                                    <div className="price">Precio $400</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/36.png" alt="Compiladores"/>
-                                    </div>
-                                    <div className="price">Precio $400</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/37.png" alt="Sistemas-Distribuidos"/>
-                                    </div>
-                                    <div className="price">Precio $400</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/38.png" alt="Electiva"/>
-                                    </div>
-                                    <div className="price">Precio $400</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/39.png" alt="Trabajo-terminal"/>
-                                    </div>
-                                    <div className="price">Precio $400</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/40.png" alt="Titulacion"/>
-                                    </div>
-                                    <div className="price">Precio $400</div>
-                                </div>
-                            </div>
-                        </div>
+                                <Casilla imagen="/casillas/4.png"
+                                         nombre="Mate-Discretas"
+                                         color="light-blue"
+                                         //colorUsuario={this.getPlayerColor(4)}
+                                         colorUsuario={this.state.casillas[4-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[4-1].Propietario-1]
+                                             : this.getPlayerColor(4)}
+                                         activa={this.state.activa && 4 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[4-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[4-1].Precio} numeroCasilla={4}/>
 
-                        <div className="space corner free-parking rotacion-180">
-                            <img src="/casillas/31.png" alt="Reprobado"/>
-                        </div>
-                        {/* CASILLAS ARRIBA */}
-                        <div className="row horizontal-row top-row">
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar azul-escom"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/30.png" alt="Arquitactura-de-computadoras"/>
-                                    </div>
-                                    <div className="price">Precio $300</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar azul-escom"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/29.png" alt="Administracion-Financiera"/>
-                                    </div>
-                                    <div className="price">Precio $300</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar azul-escom"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/28.png" alt="Web"/>
-                                    </div>
-                                    <div className="price">Precio $300</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar azul-escom"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/27.png" alt="ADOO"/>
-                                    </div>
-                                    <div className="price">Precio $300</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar azul-escom"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/26.png" alt="Sistemas-Operativos"/>
-                                    </div>
-                                    <div className="price">Precio $300</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar azul-escom"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/25.png" alt="Probabilidad"/>
-                                    </div>
-                                    <div className="price">Precio $300</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar azul-escom"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/24.png" alt="Digitales"/>
-                                    </div>
-                                    <div className="price">Precio $300</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar azul-escom"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/23.png" alt="Redes-I"/>
-                                    </div>
-                                    <div className="price">Precio $300</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar azul-escom"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/22.png" alt="Analogica"/>
-                                    </div>
-                                    <div className="price">Precio $300</div>
-                                </div>
-                            </div>
-                        </div>
+                                <Casilla imagen="/casillas/5.png"
+                                         nombre="Mate-Discretas"
+                                         color="light-blue"
+                                         //colorUsuario={this.getPlayerColor(5)}
+                                         colorUsuario={this.state.casillas[5-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[5-1].Propietario-1]
+                                             : this.getPlayerColor(5)}
+                                         activa={this.state.activa && 5 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[5-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[5-1].Precio} numeroCasilla={5}/>
 
-                        <div className="space corner go-to-jail rotacion-180">
-                            <img src="/casillas/21.png" alt="Reprobado"/>
-                        </div>
-                        {/* CASILLAS DERECHA */}
-                        <div className="row vertical-row right-row">
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar guinda"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/20.png" alt="POO"/>
-                                    </div>
-                                    <div className="price">Precio $200</div>
-                                </div>
+                                <Casilla imagen="/casillas/6.png"
+                                         nombre="Mate-Discretas"
+                                         color="light-blue"
+                                         //colorUsuario={this.getPlayerColor(6)}
+                                         colorUsuario={this.state.casillas[6-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[6-1].Propietario-1]
+                                             : this.getPlayerColor(6)}
+                                         activa={this.state.activa && 6 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[6-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[6-1].Precio} numeroCasilla={6}/>
+
+                                <Casilla imagen="/casillas/7.png"
+                                         nombre="Mate-Discretas"
+                                         color="light-blue"
+                                         //colorUsuario={this.getPlayerColor(7)}
+                                         colorUsuario={this.state.casillas[7-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[7-1].Propietario-1]
+                                             : this.getPlayerColor(7)}
+                                         activa={this.state.activa && 7 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[7-1]}
+                                         rotacion="rotacion-90"
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[7-1].Precio} numeroCasilla={7}/>
+
+                                <Casilla imagen="/casillas/8.png"
+                                         color="light-blue"
+                                         //colorUsuario={this.getPlayerColor(8)}
+                                         colorUsuario={this.state.casillas[8-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[8-1].Propietario-1]
+                                             : this.getPlayerColor(8)}
+                                         activa={this.state.activa && 8 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[8-1]}
+                                         rotacion="rotacion-90"
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[8-1].Precio} numeroCasilla={8}/>
+
+                                <Casilla imagen="/casillas/9.png"
+                                         color="light-blue"
+                                         //colorUsuario={this.getPlayerColor(9)}
+                                         colorUsuario={this.state.casillas[9-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[9-1].Propietario-1]
+                                             : this.getPlayerColor(9)}
+                                         activa={this.state.activa && 9 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[9-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[9-1].Precio} numeroCasilla={9}/>
+
+                                <Casilla imagen="/casillas/10.png"
+                                         color="light-blue"
+                                         //colorUsuario={this.getPlayerColor(10)}
+                                         colorUsuario={this.state.casillas[10-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[10-1].Propietario-1]
+                                             : this.getPlayerColor(10)}
+                                         activa={this.state.activa && 10 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[10-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[10-1].Precio} numeroCasilla={10}/>
                             </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar guinda"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/19.png" alt="Bases-de-datos"/>
-                                    </div>
-                                    <div className="price">Precio $200</div>
-                                </div>
+                            {/* INICIO*/}
+                            <div>
+                                <img src="casillas/1.png" alt="Salida"/>
                             </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar guinda"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/18.png" alt="Teoria-computacional"/>
-                                    </div>
-                                    <div className="price">Precio $200</div>
-                                </div>
+
+                            {/*CASILLAS IZQUIERDA*/}
+                            <div className="row vertical-row left-row">
+                                <Casilla imagen="/casillas/32.png"
+                                         color="blanco"
+                                         colorUsuario={this.state.casillas[32-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[32-1].Propietario-1]
+                                             : this.getPlayerColor(32)}
+                                         activa={this.state.activa && 32 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[32-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[32-1].Precio} numeroCasilla={32}/>
+                                <Casilla imagen="/casillas/33.png"
+                                         color="blanco"
+                                         colorUsuario={this.state.casillas[33-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[33-1].Propietario-1]
+                                             : this.getPlayerColor(33)}
+                                         activa={this.state.activa && 33 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[33-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[33-1].Precio} numeroCasilla={33}/>
+                                <Casilla imagen="/casillas/34.png"
+                                         color="blanco"
+                                         colorUsuario={this.state.casillas[34-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[34-1].Propietario-1]
+                                             : this.getPlayerColor(34)}
+                                         activa={this.state.activa && 34 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[34-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[34-1].Precio} numeroCasilla={34}/>
+                                <Casilla imagen="/casillas/35.png"
+                                         color="blanco"
+                                         colorUsuario={this.state.casillas[35-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[35-1].Propietario-1]
+                                             : this.getPlayerColor(35)}
+                                         activa={this.state.activa && 35 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[35-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[35-1].Precio} numeroCasilla={35}/>
+                                <Casilla imagen="/casillas/36.png"
+                                         color="blanco"
+                                         colorUsuario={this.state.casillas[36-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[36-1].Propietario-1]
+                                             : this.getPlayerColor(36)}
+                                         activa={this.state.activa && 36 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[36-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[36-1].Precio} numeroCasilla={36}/>
+                                <Casilla imagen="/casillas/37.png"
+                                         color="blanco"
+                                         colorUsuario={this.state.casillas[37-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[37-1].Propietario-1]
+                                             : this.getPlayerColor(37)}
+                                         activa={this.state.activa && 37 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[37-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[37-1].Precio} numeroCasilla={37}/>
+                                <Casilla imagen="/casillas/38.png"
+                                         color="blanco"
+                                         colorUsuario={this.state.casillas[38-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[38-1].Propietario-1]
+                                             : this.getPlayerColor(38)}
+                                         activa={this.state.activa && 38 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[38-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[38-1].Precio} numeroCasilla={38}/>
+                                <Casilla imagen="/casillas/39.png"
+                                         color="blanco"
+                                         colorUsuario={this.state.casillas[39-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[39-1].Propietario-1]
+                                             : this.getPlayerColor(39)}
+                                         activa={this.state.activa && 39 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[39-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[39-1].Precio} numeroCasilla={39}/>
+                                <Casilla imagen="/casillas/40.png"
+                                         color="blanco"
+                                         colorUsuario={this.state.casillas[40-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[40-1].Propietario-1]
+                                             : this.getPlayerColor(40)}
+                                         activa={this.state.activa && 40 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[40-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[40-1].Precio} numeroCasilla={40}/>
                             </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar guinda"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/17.png" alt="FDD"/>
-                                    </div>
-                                    <div className="price">Precio $200</div>
-                                </div>
+
+                            <div className="space corner free-parking rotacion-180">
+                                <img src="/casillas/31.png" alt="Reprobado"/>
                             </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar guinda"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/16.png" alt="Economicos"/>
-                                    </div>
-                                    <div className="price">Precio $200</div>
-                                </div>
+                            {/* CASILLAS ARRIBA */}
+                            <div className="row horizontal-row top-row">
+                                <Casilla imagen="/casillas/30.png"
+                                         color="azul-escom"
+                                         colorUsuario={this.state.casillas[30-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[30-1].Propietario-1]
+                                             : this.getPlayerColor(30)}
+                                         activa={this.state.activa && 30 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[30-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[30-1].Precio} numeroCasilla={30}/>
+                                <Casilla imagen="/casillas/29.png"
+                                         color="azul-escom"
+                                         colorUsuario={this.state.casillas[29-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[29-1].Propietario-1]
+                                             : this.getPlayerColor(29)}
+                                         activa={this.state.activa && 29 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[29-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[29-1].Precio} numeroCasilla={29}/>
+                                <Casilla imagen="/casillas/28.png"
+                                         color="azul-escom"
+                                         colorUsuario={this.state.casillas[28-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[28-1].Propietario-1]
+                                             : this.getPlayerColor(28)}
+                                         activa={this.state.activa && 28 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[28-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[28-1].Precio} numeroCasilla={28}/>
+                                <Casilla imagen="/casillas/27.png"
+                                         color="azul-escom"
+                                         colorUsuario={this.state.casillas[27-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[27-1].Propietario-1]
+                                             : this.getPlayerColor(27)}
+                                         activa={this.state.activa && 27 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[27-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[27-1].Precio} numeroCasilla={27}/>
+                                <Casilla imagen="/casillas/26.png"
+                                         color="azul-escom"
+                                         colorUsuario={this.state.casillas[26-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[26-1].Propietario-1]
+                                             : this.getPlayerColor(26)}
+                                         activa={this.state.activa && 26 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[26-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[26-1].Precio} numeroCasilla={26}/>
+                                <Casilla imagen="/casillas/25.png"
+                                         color="azul-escom"
+                                         colorUsuario={this.state.casillas[25-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[25-1].Propietario-1]
+                                             : this.getPlayerColor(25)}
+                                         activa={this.state.activa && 25 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[25-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[25-1].Precio} numeroCasilla={25}/>
+                                <Casilla imagen="/casillas/24.png"
+                                         color="azul-escom"
+                                         colorUsuario={this.state.casillas[24-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[24-1].Propietario-1]
+                                             : this.getPlayerColor(24)}
+                                         activa={this.state.activa && 24 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[24-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[24-1].Precio} numeroCasilla={24}/>
+                                <Casilla imagen="/casillas/23.png"
+                                         color="azul-escom"
+                                         colorUsuario={this.state.casillas[23-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[23-1].Propietario-1]
+                                             : this.getPlayerColor(23)}
+                                         activa={this.state.activa && 23 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[23-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[23-1].Precio} numeroCasilla={23}/>
+                                <Casilla imagen="/casillas/22.png"
+                                         color="azul-escom"
+                                         colorUsuario={this.state.casillas[22-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[22-1].Propietario-1]
+                                             : this.getPlayerColor(22)}
+                                         activa={this.state.activa && 22 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[22-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[22-1].Precio} numeroCasilla={22}/>
                             </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar guinda"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/15.png" alt="Avanzadas"/>
-                                    </div>
-                                    <div className="price">Precio $200</div>
-                                </div>
+
+                            <div className="space corner go-to-jail rotacion-180">
+                                <img src="/casillas/21.png" alt="Reprobado"/>
                             </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar guinda"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/14.png" alt="AFC"/>
-                                    </div>
-                                    <div className="price">Precio $200</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar guinda"></div>
-                                    <div className="image-container">
-                                        <img src="/casillas/13.png" alt="COE"/>
-                                    </div>
-                                    <div className="price">Precio $200</div>
-                                </div>
-                            </div>
-                            <div className="space property">
-                                <div className="container">
-                                    <div className="color-bar guinda"/>
-                                    <div className="image-container">
-                                        <img src="/casillas/12.png" alt="Estructuras-Datos"/>
-                                    </div>
-                                    <div className="price">Precio $200</div>
-                                </div>
+                            {/* CASILLAS DERECHA */}
+                            <div className="row vertical-row right-row">
+                                <Casilla imagen="/casillas/20.png"
+                                         color="guinda"
+                                         colorUsuario={this.state.casillas[20-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[20-1].Propietario-1]
+                                             : this.getPlayerColor(20)}
+                                         activa={this.state.activa && 20 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[20-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[20-1].Precio} numeroCasilla={20}/>
+                                <Casilla imagen="/casillas/19.png"
+                                         color="guinda"
+                                         colorUsuario={this.state.casillas[19-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[19-1].Propietario-1]
+                                             : this.getPlayerColor(19)}
+                                         activa={this.state.activa && 19 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[19-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[19-1].Precio} numeroCasilla={19}/>
+                                <Casilla imagen="/casillas/30.png"
+                                         color="guinda"
+                                         colorUsuario={this.state.casillas[18-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[18-1].Propietario-1]
+                                             : this.getPlayerColor(18)}
+                                         activa={this.state.activa && 18 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[18-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[18-1].Precio} numeroCasilla={18}/>
+                                <Casilla imagen="/casillas/17.png"
+                                         color="guinda"
+                                         colorUsuario={this.state.casillas[17-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[17-1].Propietario-1]
+                                             : this.getPlayerColor(17)}
+                                         activa={this.state.activa && 17 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[17-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[17-1].Precio} numeroCasilla={17}/>
+                                <Casilla imagen="/casillas/16.png"
+                                         color="guinda"
+                                         colorUsuario={this.state.casillas[16-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[16-1].Propietario-1]
+                                             : this.getPlayerColor(16)}
+                                         activa={this.state.activa && 16 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[16-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[16-1].Precio} numeroCasilla={16}/>
+                                <Casilla imagen="/casillas/15.png"
+                                         color="guinda"
+                                         colorUsuario={this.state.casillas[15-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[15-1].Propietario-1]
+                                             : this.getPlayerColor(15)}
+                                         activa={this.state.activa && 15 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[15-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[15-1].Precio} numeroCasilla={15}/>
+                                <Casilla imagen="/casillas/14.png"
+                                         color="guinda"
+                                         colorUsuario={this.state.casillas[14-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[14-1].Propietario-1]
+                                             : this.getPlayerColor(14)}
+                                         activa={this.state.activa && 14 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[14-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[14-1].Precio} numeroCasilla={14}/>
+                                <Casilla imagen="/casillas/13.png"
+                                         color="guinda"
+                                         colorUsuario={this.state.casillas[13-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[13-1].Propietario-1]
+                                             : this.getPlayerColor(13)}
+                                         activa={this.state.activa && 13 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[13-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[13-1].Precio} numeroCasilla={13}/>
+                                <Casilla imagen="/casillas/12.png"
+                                         color="guinda"
+                                         colorUsuario={this.state.casillas[12-1].Propietario > 0
+                                             ? this.state.colores[this.state.casillas[12-1].Propietario-1]
+                                             : this.getPlayerColor(12)}
+                                         activa={this.state.activa && 12 === this.state.jugadores[this.state.idJugador-1].posicion}
+                                         casilla={this.state.casillas[12-1]}
+                                         idJugador={this.state.idJugador}
+                                         handler={this.desactive}
+                                         precio={this.state.casillas[12-1].Precio} numeroCasilla={12}/>
                             </div>
                         </div>
                     </div>
-                </div>
+                }
             </div>
         );
     }

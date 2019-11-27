@@ -2,6 +2,8 @@ import { Meteor } from 'meteor/meteor';
 import moment from "moment";
 moment.locale('es');
 
+import '../imports/api/juego';
+
 Meteor.startup(() => {
   // code to run on server at startup
     let fecha = moment('2019-10-21 00:00:35.980Z');
@@ -9,6 +11,7 @@ Meteor.startup(() => {
 
     Meteor.onConnection(function (connection) {
         console.log('Cliente conectado desde: ', connection.clientAddress);
+
     });
 
 });
