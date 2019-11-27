@@ -2,12 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="2b592d2d-df8d-4e3c-b45d-59ec9c2b50a9" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/imports/api/juego.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/imports/client/styles/components/_board.scss" beforeDir="false" afterPath="$PROJECT_DIR$/imports/client/styles/components/_board.scss" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/imports/components/Casilla.js" beforeDir="false" afterPath="$PROJECT_DIR$/imports/components/Casilla.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/imports/ui/Tablero.js" beforeDir="false" afterPath="$PROJECT_DIR$/imports/ui/Tablero.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/server/main.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -73,7 +69,7 @@
       <updated>1574715153961</updated>
       <workItem from="1574715156057" duration="2053000" />
       <workItem from="1574717304602" duration="4940000" />
-      <workItem from="1574788233922" duration="22100000" />
+      <workItem from="1574788233922" duration="22594000" />
     </task>
     <servers />
   </component>
