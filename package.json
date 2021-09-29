@@ -11,7 +11,7 @@
     "@babel/runtime": "^7.3.4",
     "@trendmicro/react-modal": "^3.0.0",
     "history": "^4.10.1",
-    "i": "^0.3.6",
+    "i": "^0.3.7",
     "meteor-node-stubs": "^0.4.1",
     "moment": "^2.24.0",
     "npm": "^6.13.1",
